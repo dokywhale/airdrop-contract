@@ -5,7 +5,7 @@ use cosmwasm_std::{
     WasmMsg,
 };
 use cw2::{get_contract_version, set_contract_version};
-use cw20::{Cw20ExecuteMsg, Expiration};
+use cw20::{BalanceResponse, Cw20ExecuteMsg, Cw20QueryMsg, Expiration};
 use sha2::Digest;
 use std::convert::TryInto;
 
@@ -14,7 +14,7 @@ use crate::msg::{
     ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse, LatestStageResponse,
     MerkleRootResponse, MigrateMsg, QueryMsg,
 };
-use crate::state::{Config, CLAIM, CONFIG, LATEST_STAGE, MERKLE_ROOT, EXPIRES};
+use crate::state::{Config, CLAIM, CONFIG, EXPIRES, LATEST_STAGE, MERKLE_ROOT};
 
 // Version info, for migration info
 const CONTRACT_NAME: &str = "crates.io:cw20-merkle-airdrop";
@@ -54,14 +54,16 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::UpdateConfig { new_owner } => execute_update_config(deps, env, info, new_owner),
-        ExecuteMsg::RegisterMerkleRoot { merkle_root, expire } => {
-            execute_register_merkle_root(deps, env, info, merkle_root, expire)
-        }
+        ExecuteMsg::RegisterMerkleRoot {
+            merkle_root,
+            expire,
+        } => execute_register_merkle_root(deps, env, info, merkle_root, expire),
         ExecuteMsg::Claim {
             stage,
             amount,
             proof,
         } => execute_claim(deps, env, info, stage, amount, proof),
+        ExecuteMsg::Clean { stage } => execute_clean(deps, env, info, stage),
     }
 }
 
@@ -193,6 +195,49 @@ pub fn execute_claim(
     Ok(res)
 }
 
+pub fn execute_clean(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    stage: u8,
+) -> Result<Response, ContractError> {
+    let cfg = CONFIG.load(deps.storage)?;
+
+    // if owner set validate, otherwise unauthorized
+    let owner = cfg.owner.ok_or(ContractError::Unauthorized {})?;
+    if info.sender != owner {
+        return Err(ContractError::Finished {});
+    }
+
+    let expire = EXPIRES
+        .may_load(deps.storage, stage)?
+        .ok_or(ContractError::Unauthorized {})?;
+
+    if !expire.is_expired(&env.block) {
+        return Err(ContractError::Unauthorized {});
+    }
+
+    let query = Cw20QueryMsg::Balance {
+        address: env.contract.address.into_string(),
+    };
+    let res: BalanceResponse = deps
+        .querier
+        .query_wasm_smart(cfg.cw20_token_address.clone(), &query)?;
+    let msg = WasmMsg::Execute {
+        contract_addr: cfg.cw20_token_address.to_string(),
+        funds: vec![],
+        msg: to_binary(&Cw20ExecuteMsg::Transfer {
+            recipient: owner.to_string(),
+            amount: res.balance,
+        })?,
+    };
+
+    Ok(Response::new().add_message(msg).add_attributes(vec![
+        attr("action", "clean_merkle"),
+        attr("stage", stage.to_string()),
+    ]))
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
@@ -277,6 +322,42 @@ mod tests {
         let res = query(deps.as_ref(), env, QueryMsg::LatestStage {}).unwrap();
         let latest_stage: LatestStageResponse = from_binary(&res).unwrap();
         assert_eq!(0u8, latest_stage.latest_stage);
+    }
+
+    #[test]
+    fn clean() {
+        // Run test 1
+        let mut deps = mock_dependencies();
+        let test_data: Encoded = from_slice(TEST_DATA_1).unwrap();
+
+        let msg = InstantiateMsg {
+            owner: Some("owner0000".to_string()),
+            cw20_token_address: "token0000".to_string(),
+        };
+
+        let env = mock_env();
+        let info = mock_info("owner0000", &[]);
+        let _res = instantiate(deps.as_mut(), env, info, msg).unwrap();
+
+        let env = mock_env();
+        let info = mock_info("owner0000", &[]);
+        let msg = ExecuteMsg::RegisterMerkleRoot {
+            merkle_root: test_data.root,
+            expire: Some(Expiration::AtHeight(20)),
+        };
+        let _res = execute(deps.as_mut(), env, info.clone(), msg).unwrap();
+
+        let msg = ExecuteMsg::Clean { stage: 1u8 };
+
+        let mut env = mock_env();
+        env.block.height = 19;
+        let res = execute(deps.as_mut(), env, info.clone(), msg.clone()).unwrap_err();
+        assert_eq!(res, ContractError::Unauthorized {});
+
+        // let mut env = mock_env();
+        // env.block.height = 21;
+        // let res = execute(deps.as_mut(), env, info.clone(), msg.clone()).unwrap();
+        // assert_eq!(1, res.messages.len());
     }
 
     #[test]

@@ -22,7 +22,7 @@ pub enum ExecuteMsg {
     RegisterMerkleRoot {
         /// MerkleRoot is hex-encoded merkle root.
         merkle_root: String,
-        expire: Option<Expiration>
+        expire: Option<Expiration>,
     },
     /// Claim does not check if contract has enough funds, owner must ensure it.
     Claim {
@@ -31,6 +31,8 @@ pub enum ExecuteMsg {
         /// Proof is hex-encoded merkle proof.
         proof: Vec<String>,
     },
+    /// Clean airdrop if has expiration.
+    Clean { stage: u8 },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
