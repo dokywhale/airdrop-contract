@@ -5,7 +5,7 @@ use cosmwasm_std::{
     WasmMsg,
 };
 use cw2::{get_contract_version, set_contract_version};
-use cw20::Cw20ExecuteMsg;
+use cw20::{Cw20ExecuteMsg, Expiration};
 use sha2::Digest;
 use std::convert::TryInto;
 
@@ -14,7 +14,7 @@ use crate::msg::{
     ConfigResponse, ExecuteMsg, InstantiateMsg, IsClaimedResponse, LatestStageResponse,
     MerkleRootResponse, MigrateMsg, QueryMsg,
 };
-use crate::state::{Config, CLAIM, CONFIG, LATEST_STAGE, MERKLE_ROOT};
+use crate::state::{Config, CLAIM, CONFIG, LATEST_STAGE, MERKLE_ROOT, EXPIRES};
 
 // Version info, for migration info
 const CONTRACT_NAME: &str = "crates.io:cw20-merkle-airdrop";
@@ -54,8 +54,8 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::UpdateConfig { new_owner } => execute_update_config(deps, env, info, new_owner),
-        ExecuteMsg::RegisterMerkleRoot { merkle_root } => {
-            execute_register_merkle_root(deps, env, info, merkle_root)
+        ExecuteMsg::RegisterMerkleRoot { merkle_root, expire } => {
+            execute_register_merkle_root(deps, env, info, merkle_root, expire)
         }
         ExecuteMsg::Claim {
             stage,
@@ -97,6 +97,7 @@ pub fn execute_register_merkle_root(
     _env: Env,
     info: MessageInfo,
     merkle_root: String,
+    expires: Option<Expiration>,
 ) -> Result<Response, ContractError> {
     let cfg = CONFIG.load(deps.storage)?;
 
@@ -114,6 +115,9 @@ pub fn execute_register_merkle_root(
 
     MERKLE_ROOT.save(deps.storage, stage, &merkle_root)?;
     LATEST_STAGE.save(deps.storage, &stage)?;
+    if let Some(expire) = expires {
+        EXPIRES.save(deps.storage, stage, &expire)?;
+    }
 
     Ok(Response::new().add_attributes(vec![
         attr("action", "register_merkle_root"),
@@ -124,12 +128,18 @@ pub fn execute_register_merkle_root(
 
 pub fn execute_claim(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     stage: u8,
     amount: Uint128,
     proof: Vec<String>,
 ) -> Result<Response, ContractError> {
+    // Verify if airdrop expired
+    let expire = EXPIRES.may_load(deps.storage, stage)?;
+    if expire.is_some() && expire.unwrap().is_expired(&env.block) {
+        return Err(ContractError::Finished {});
+    }
+
     // verify not claimed
     let claimed = CLAIM.may_load(deps.storage, (&info.sender, stage))?;
     if claimed.is_some() {
@@ -325,6 +335,7 @@ mod tests {
         let msg = ExecuteMsg::RegisterMerkleRoot {
             merkle_root: "634de21cde1044f41d90373733b0f0fb1c1c71f9652b905cdf159e73c4cf0d37"
                 .to_string(),
+            expire: None,
         };
 
         let res = execute(deps.as_mut(), env.clone(), info, msg).unwrap();
@@ -389,6 +400,7 @@ mod tests {
         let info = mock_info("owner0000", &[]);
         let msg = ExecuteMsg::RegisterMerkleRoot {
             merkle_root: test_data.root,
+            expire: Some(Expiration::AtHeight(20)),
         };
         let _res = execute(deps.as_mut(), env, info, msg).unwrap();
 
@@ -398,7 +410,8 @@ mod tests {
             proof: test_data.proofs,
         };
 
-        let env = mock_env();
+        let mut env = mock_env();
+        env.block.height = 19;
         let info = mock_info(test_data.account.as_str(), &[]);
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).unwrap();
         let expected = SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
@@ -450,6 +463,7 @@ mod tests {
         let info = mock_info("owner0000", &[]);
         let msg = ExecuteMsg::RegisterMerkleRoot {
             merkle_root: test_data.root,
+            expire: None,
         };
         let _res = execute(deps.as_mut(), env, info, msg).unwrap();
 
@@ -504,6 +518,7 @@ mod tests {
         let msg = ExecuteMsg::RegisterMerkleRoot {
             merkle_root: "5d4f48f147cb6cb742b376dce5626b2a036f69faec10cd73631c791780e150fc"
                 .to_string(),
+            expire: None,
         };
         let _res = execute(deps.as_mut(), env, info, msg).unwrap();
 
@@ -531,6 +546,7 @@ mod tests {
         let msg = ExecuteMsg::RegisterMerkleRoot {
             merkle_root: "ebaa83c7eaf7467c378d2f37b5e46752d904d2d17acd380b24b02e3b398b3e5a"
                 .to_string(),
+            expire: None,
         };
         let res = execute(deps.as_mut(), env, info, msg).unwrap_err();
         assert_eq!(res, ContractError::Unauthorized {});
@@ -541,6 +557,7 @@ mod tests {
         let msg = ExecuteMsg::RegisterMerkleRoot {
             merkle_root: "ebaa83c7eaf7467c378d2f37b5e46752d904d2d17acd380b24b02e3b398b3e5a"
                 .to_string(),
+            expire: None,
         };
         let res = execute(deps.as_mut(), env, info, msg).unwrap_err();
         assert_eq!(res, ContractError::Unauthorized {});

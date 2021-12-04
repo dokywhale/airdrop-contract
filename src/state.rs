@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use cosmwasm_std::Addr;
 use cw_storage_plus::{Item, Map};
+use cw20::Expiration;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
@@ -19,6 +20,9 @@ pub const LATEST_STAGE: Item<u8> = Item::new(LATEST_STAGE_KEY);
 
 pub const MERKLE_ROOT_PREFIX: &str = "merkle_root";
 pub const MERKLE_ROOT: Map<u8, String> = Map::new(MERKLE_ROOT_PREFIX);
+
+pub const EXPIRES_KEY: &str = "merkle_expire";
+pub const EXPIRES: Map<u8, Expiration> = Map::new(EXPIRES_KEY);
 
 pub const CLAIM_PREFIX: &str = "claim";
 pub const CLAIM: Map<(&Addr, u8), bool> = Map::new(CLAIM_PREFIX);

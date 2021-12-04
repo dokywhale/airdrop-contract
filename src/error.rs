@@ -19,6 +19,9 @@ pub enum ContractError {
     #[error("Already claimed")]
     Claimed {},
 
+    #[error("Airdrop finished")]
+    Finished {},
+
     #[error("Wrong length")]
     WrongLength {},
 
