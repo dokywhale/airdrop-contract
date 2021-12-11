@@ -25,4 +25,4 @@ pub const EXPIRES_KEY: &str = "merkle_expire";
 pub const EXPIRES: Map<u8, Expiration> = Map::new(EXPIRES_KEY);
 
 pub const CLAIM_PREFIX: &str = "claim";
-pub const CLAIM: Map<(&Addr, u8), bool> = Map::new(CLAIM_PREFIX);
+pub const CLAIM: Map<(String, u8), bool> = Map::new(CLAIM_PREFIX);

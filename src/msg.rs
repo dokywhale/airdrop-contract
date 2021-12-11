@@ -27,6 +27,7 @@ pub enum ExecuteMsg {
     /// Claim does not check if contract has enough funds, owner must ensure it.
     Claim {
         stage: u8,
+        index: String,
         amount: Uint128,
         /// Proof is hex-encoded merkle proof.
         proof: Vec<String>,
@@ -41,7 +42,7 @@ pub enum QueryMsg {
     Config {},
     MerkleRoot { stage: u8 },
     LatestStage {},
-    IsClaimed { stage: u8, address: String },
+    IsClaimed { stage: u8, index: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]

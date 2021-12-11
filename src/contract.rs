@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
+    attr, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
     WasmMsg,
 };
 use cw2::{get_contract_version, set_contract_version};
@@ -60,9 +60,10 @@ pub fn execute(
         } => execute_register_merkle_root(deps, env, info, merkle_root, expire),
         ExecuteMsg::Claim {
             stage,
+            index,
             amount,
             proof,
-        } => execute_claim(deps, env, info, stage, amount, proof),
+        } => execute_claim(deps, env, info, stage, index, amount, proof),
         ExecuteMsg::Clean { stage } => execute_clean(deps, env, info, stage),
     }
 }
@@ -133,6 +134,7 @@ pub fn execute_claim(
     env: Env,
     info: MessageInfo,
     stage: u8,
+    index: String,
     amount: Uint128,
     proof: Vec<String>,
 ) -> Result<Response, ContractError> {
@@ -143,7 +145,7 @@ pub fn execute_claim(
     }
 
     // verify not claimed
-    let claimed = CLAIM.may_load(deps.storage, (&info.sender, stage))?;
+    let claimed = CLAIM.may_load(deps.storage, (index.clone(), stage))?;
     if claimed.is_some() {
         return Err(ContractError::Claimed {});
     }
@@ -151,7 +153,7 @@ pub fn execute_claim(
     let config = CONFIG.load(deps.storage)?;
     let merkle_root = MERKLE_ROOT.load(deps.storage, stage)?;
 
-    let user_input = format!("{}{}", info.sender, amount);
+    let user_input = format!("{}{}{}", index, info.sender, amount);
     let hash = sha2::Sha256::digest(user_input.as_bytes())
         .as_slice()
         .try_into()
@@ -175,7 +177,7 @@ pub fn execute_claim(
     }
 
     // Update claim index to the current stage
-    CLAIM.save(deps.storage, (&info.sender, stage), &true)?;
+    CLAIM.save(deps.storage, (index, stage), &true)?;
 
     let res = Response::new()
         .add_message(WasmMsg::Execute {
@@ -244,8 +246,8 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
         QueryMsg::MerkleRoot { stage } => to_binary(&query_merkle_root(deps, stage)?),
         QueryMsg::LatestStage {} => to_binary(&query_latest_stage(deps)?),
-        QueryMsg::IsClaimed { stage, address } => {
-            to_binary(&query_is_claimed(deps, stage, address)?)
+        QueryMsg::IsClaimed { stage, index } => {
+            to_binary(&query_is_claimed(deps, stage, index)?)
         }
     }
 }
@@ -272,8 +274,8 @@ pub fn query_latest_stage(deps: Deps) -> StdResult<LatestStageResponse> {
     Ok(resp)
 }
 
-pub fn query_is_claimed(deps: Deps, stage: u8, address: String) -> StdResult<IsClaimedResponse> {
-    let key: (&Addr, u8) = (&deps.api.addr_validate(&address)?, stage);
+pub fn query_is_claimed(deps: Deps, stage: u8, index: String) -> StdResult<IsClaimedResponse> {
+    let key: (String, u8) = (index, stage);
     let is_claimed = CLAIM.may_load(deps.storage, key)?.unwrap_or(false);
     let resp = IsClaimedResponse { is_claimed };
 
@@ -488,6 +490,7 @@ mod tests {
         let msg = ExecuteMsg::Claim {
             amount: test_data.amount,
             stage: 1u8,
+            index: "1".into(),
             proof: test_data.proofs,
         };
 
@@ -523,7 +526,7 @@ mod tests {
                     env.clone(),
                     QueryMsg::IsClaimed {
                         stage: 1,
-                        address: test_data.account
+                        index: "1".into(),
                     }
                 )
                 .unwrap()
@@ -552,6 +555,7 @@ mod tests {
         let msg = ExecuteMsg::Claim {
             amount: test_data.amount,
             stage: 2u8,
+            index: "1".into(),
             proof: test_data.proofs,
         };
 
