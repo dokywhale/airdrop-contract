@@ -458,6 +458,7 @@ mod tests {
 
     #[derive(Deserialize, Debug)]
     struct Encoded {
+        index: String,
         account: String,
         amount: Uint128,
         root: String,
@@ -490,7 +491,7 @@ mod tests {
         let msg = ExecuteMsg::Claim {
             amount: test_data.amount,
             stage: 1u8,
-            index: "1".into(),
+            index: test_data.index,
             proof: test_data.proofs,
         };
 
@@ -555,7 +556,7 @@ mod tests {
         let msg = ExecuteMsg::Claim {
             amount: test_data.amount,
             stage: 2u8,
-            index: "1".into(),
+            index: test_data.index,
             proof: test_data.proofs,
         };
 
