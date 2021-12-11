@@ -65,12 +65,16 @@
           "type": "object",
           "required": [
             "amount",
+            "index",
             "proof",
             "stage"
           ],
           "properties": {
             "amount": {
               "$ref": "#/definitions/Uint128"
+            },
+            "index": {
+              "type": "string"
             },
             "proof": {
               "description": "Proof is hex-encoded merkle proof.",

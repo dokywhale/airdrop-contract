@@ -57,11 +57,11 @@
         "is_claimed": {
           "type": "object",
           "required": [
-            "address",
+            "index",
             "stage"
           ],
           "properties": {
-            "address": {
+            "index": {
               "type": "string"
             },
             "stage": {
