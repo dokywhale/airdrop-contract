@@ -1,6 +1,6 @@
 import {Command, flags} from '@oclif/command'
-import { readFileSync } from 'fs';
-import {Airdrop} from '../airdrop';
+import {readFileSync} from 'fs'
+import {Airdrop} from '../airdrop'
 
 export default class VerifyProof extends Command {
   static description = 'Verifies merkle proofs for given address'
@@ -8,6 +8,7 @@ export default class VerifyProof extends Command {
   static examples = [
     `$ PROOFS='[ "27e9b1ec8cb64709d0a8d3702344561674199fe81b885f1f9c9b2fb268795962","280777995d054081cbf208bccb70f8d736c1766b81d90a1fd21cd97d2d83a5cc","3946ea1758a5a2bf55bae1186168ad35aa0329805bc8bff1ca3d51345faec04a"]'
      $ merkle-airdrop-cli verifyProofs --file ../testdata/airdrop.json \
+        --index 1 \
         --address wasm1k9hwzxs889jpvd7env8z49gad3a3633vg350tq \
         --amount 100
         --proofs $PROOFS
@@ -18,6 +19,7 @@ export default class VerifyProof extends Command {
     help: flags.help({char: 'h'}),
     file: flags.string({char: 'f', description: 'airdrop file location'}),
     proofs: flags.string({char: 'p', description: 'proofs in json format'}),
+    index: flags.string({char: 'i', description: 'index'}),
     address: flags.string({char: 'a', description: 'address'}),
     amount: flags.string({char: 'b', description: 'amount'}),
   }
@@ -31,6 +33,9 @@ export default class VerifyProof extends Command {
     if (!flags.proofs) {
       this.error(new Error('Proofs not defined'))
     }
+    if (!flags.index) {
+      this.error(new Error('Index not defined'))
+    }
     if (!flags.address) {
       this.error(new Error('Address not defined'))
     }
@@ -38,18 +43,18 @@ export default class VerifyProof extends Command {
       this.error(new Error('Amount not defined'))
     }
 
-    let file;
+    let file
     try {
-      file = readFileSync(flags.file, 'utf-8');
+      file = readFileSync(flags.file, 'utf-8')
     } catch (e) {
       this.error(e)
     }
 
-    let receivers: Array<{ address: string; amount: string }> = JSON.parse(file);
+    const receivers: Array<{ index: string; address: string; amount: string }> = JSON.parse(file)
 
-    let airdrop = new Airdrop(receivers)
-    let proofs: string[] = JSON.parse(flags.proofs)
+    const airdrop = new Airdrop(receivers)
+    const proofs: string[] = JSON.parse(flags.proofs)
 
-    console.log(airdrop.verify(proofs, {address: flags.address, amount: flags.amount}))
+    console.log(airdrop.verify(proofs, {index: flags.index, address: flags.address, amount: flags.amount}))
   }
 }

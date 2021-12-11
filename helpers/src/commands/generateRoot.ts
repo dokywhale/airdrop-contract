@@ -1,6 +1,6 @@
 import {Command, flags} from '@oclif/command'
-import { readFileSync } from 'fs';
-import {Airdrop} from '../airdrop';
+import {readFileSync} from 'fs'
+import {Airdrop} from '../airdrop'
 
 export default class GenerateRoot extends Command {
   static description = 'Generates merkle root'
@@ -22,16 +22,16 @@ export default class GenerateRoot extends Command {
       this.error(new Error('Airdrop file location not defined'))
     }
 
-    let file;
+    let file
     try {
-      file = readFileSync(flags.file, 'utf-8');
+      file = readFileSync(flags.file, 'utf-8')
     } catch (e) {
       this.error(e)
     }
 
-    let receivers: Array<{ address: string; amount: string }> = JSON.parse(file);
+    const receivers: Array<{ index: string; address: string; amount: string }> = JSON.parse(file)
 
-    let airdrop = new Airdrop(receivers)
+    const airdrop = new Airdrop(receivers)
     console.log(airdrop.getMerkleRoot())
   }
 }
