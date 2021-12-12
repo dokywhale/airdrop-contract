@@ -1,8 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
-    WasmMsg,
+    attr, to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, WasmMsg,
 };
 use cw2::{get_contract_version, set_contract_version};
 use cw20::{BalanceResponse, Cw20ExecuteMsg, Cw20QueryMsg, Expiration};
@@ -64,7 +63,7 @@ pub fn execute(
             amount,
             proof,
         } => execute_claim(deps, env, info, stage, index, amount, proof),
-        ExecuteMsg::Clean { stage } => execute_clean(deps, env, info, stage),
+        ExecuteMsg::Burn { stage } => execute_burn(deps, env, info, stage),
     }
 }
 
@@ -197,7 +196,7 @@ pub fn execute_claim(
     Ok(res)
 }
 
-pub fn execute_clean(
+pub fn execute_burn(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -228,14 +227,13 @@ pub fn execute_clean(
     let msg = WasmMsg::Execute {
         contract_addr: cfg.cw20_token_address.to_string(),
         funds: vec![],
-        msg: to_binary(&Cw20ExecuteMsg::Transfer {
-            recipient: owner.to_string(),
+        msg: to_binary(&Cw20ExecuteMsg::Burn {
             amount: res.balance,
         })?,
     };
 
     Ok(Response::new().add_message(msg).add_attributes(vec![
-        attr("action", "clean_merkle"),
+        attr("action", "burn"),
         attr("stage", stage.to_string()),
     ]))
 }
@@ -246,9 +244,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
         QueryMsg::MerkleRoot { stage } => to_binary(&query_merkle_root(deps, stage)?),
         QueryMsg::LatestStage {} => to_binary(&query_latest_stage(deps)?),
-        QueryMsg::IsClaimed { stage, index } => {
-            to_binary(&query_is_claimed(deps, stage, index)?)
-        }
+        QueryMsg::IsClaimed { stage, index } => to_binary(&query_is_claimed(deps, stage, index)?),
     }
 }
 

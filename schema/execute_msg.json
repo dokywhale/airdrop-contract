@@ -94,13 +94,13 @@
       "additionalProperties": false
     },
     {
-      "description": "Clean airdrop if has expiration.",
+      "description": "Burn airdrop after expire.",
       "type": "object",
       "required": [
-        "clean"
+        "burn"
       ],
       "properties": {
-        "clean": {
+        "burn": {
           "type": "object",
           "required": [
             "stage"

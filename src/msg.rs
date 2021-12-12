@@ -32,8 +32,8 @@ pub enum ExecuteMsg {
         /// Proof is hex-encoded merkle proof.
         proof: Vec<String>,
     },
-    /// Clean airdrop if has expiration.
-    Clean { stage: u8 },
+    /// Burn airdrop after expire.
+    Burn { stage: u8 },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
