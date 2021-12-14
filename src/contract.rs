@@ -16,7 +16,7 @@ use crate::msg::{
 use crate::state::{Config, CLAIM, CONFIG, EXPIRES, LATEST_STAGE, MERKLE_ROOT};
 
 // Version info, for migration info
-const CONTRACT_NAME: &str = "crates.io:cw20-merkle-airdrop";
+const CONTRACT_NAME: &str = "crates.io:doky-airdrop";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
