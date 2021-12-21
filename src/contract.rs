@@ -199,17 +199,9 @@ pub fn execute_claim(
 pub fn execute_burn(
     deps: DepsMut,
     env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     stage: u8,
 ) -> Result<Response, ContractError> {
-    let cfg = CONFIG.load(deps.storage)?;
-
-    // if owner set validate, otherwise unauthorized
-    let owner = cfg.owner.ok_or(ContractError::Unauthorized {})?;
-    if info.sender != owner {
-        return Err(ContractError::Finished {});
-    }
-
     let expire = EXPIRES
         .may_load(deps.storage, stage)?
         .ok_or(ContractError::Unauthorized {})?;
@@ -218,6 +210,7 @@ pub fn execute_burn(
         return Err(ContractError::Unauthorized {});
     }
 
+    let cfg = CONFIG.load(deps.storage)?;
     let query = Cw20QueryMsg::Balance {
         address: env.contract.address.into_string(),
     };
@@ -323,7 +316,7 @@ mod tests {
     }
 
     #[test]
-    fn clean() {
+    fn burn() {
         // Run test 1
         let mut deps = mock_dependencies();
         let test_data: Encoded = from_slice(TEST_DATA_1).unwrap();
@@ -345,7 +338,7 @@ mod tests {
         };
         let _res = execute(deps.as_mut(), env, info.clone(), msg).unwrap();
 
-        let msg = ExecuteMsg::Clean { stage: 1u8 };
+        let msg = ExecuteMsg::Burn { stage: 1u8 };
 
         let mut env = mock_env();
         env.block.height = 19;
