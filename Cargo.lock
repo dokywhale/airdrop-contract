@@ -181,7 +181,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw20-merkle-airdrop"
+name = "cw20-doky-airdrop"
 version = "0.7.0"
 dependencies = [
  "cosmwasm-schema",
