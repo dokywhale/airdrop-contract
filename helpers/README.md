@@ -26,7 +26,7 @@ Binary will be placed to path.
 
 **Generate Root:**
 ```shell
-merkle-airdrop-cli generateRoot --file ../testdata/airdrop_stage_2_list.json 
+merkle-airdrop-cli generateRoot --file ../testdata/airdrop_stage_2_list.json
 ```
 
 **Generate proof:**
@@ -34,7 +34,7 @@ merkle-airdrop-cli generateRoot --file ../testdata/airdrop_stage_2_list.json
 merkle-airdrop-cli generateProofs --file ../testdata/airdrop_stage_2_list.json \
   --index 1 \
   --address wasm1ylna88nach9sn5n7qe7u5l6lh7dmt6lp2y63xx  \
-  --amount 1000000000  
+  --amount 1000000000
 ```
 
 **Verify proof:**
@@ -44,6 +44,7 @@ PROOFS='[ "27e9b1ec8cb64709d0a8d3702344561674199fe81b885f1f9c9b2fb268795962","28
 merkle-airdrop-cli verifyProofs --file ../testdata/airdrop.json \
   --index 1 \
   --address wasm1k9hwzxs889jpvd7env8z49gad3a3633vg350tq \
-  --amount 1000000000 \ 
-  --proofs $PROOFS 
+  --amount 1000000000 \
+  --proofs $PROOFS
+
 ```
