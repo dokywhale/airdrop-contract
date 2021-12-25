@@ -23,6 +23,7 @@ Binary will be placed to path.
 ]
 ```
 
+
 ## Commands
 
 **Generate Root:**
