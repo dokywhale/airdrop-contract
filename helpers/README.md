@@ -17,9 +17,8 @@ Binary will be placed to path.
 
 ```json
 [
-  { "index": "1", "address": "juno1q4aw0vtcydtn7lqmkfprm4ncmr4jdj70ggc6sp", "amount": "1000000000"},
-  { "index": "2", "address": "juno1wnr06m7s66syagzd0zvgsu2qzsh4htqup2njz5", "amount": "502000000"},
-  { "index": "3", "address": "juno1qesady6wm5v7yh497xgq6uu8hnayr03u8ucrud", "amount": "105000000"}
+  { "index": "1", "address": "wasm1k9hwzxs889jpvd7env8z49gad3a3633vg350tq", "amount": "100"},
+  { "index": "2", "address": "wasm1uy9ucvgerneekxpnfwyfnpxvlsx5dzdpf0mzjd", "amount": "1010"}
 ]
 ```
 
@@ -35,7 +34,7 @@ merkle-airdrop-cli generateRoot --file ../testdata/airdrop_stage_2_list.json
 ```shell
 merkle-airdrop-cli generateProofs --file ../testdata/airdrop_stage_2_list.json \
   --index 1 \
-  --address juno1q4aw0vtcydtn7lqmkfprm4ncmr4jdj70ggc6sp \
+  --address wasm1ylna88nach9sn5n7qe7u5l6lh7dmt6lp2y63xx  \
   --amount 1000000000
 ```
 
@@ -45,7 +44,7 @@ PROOFS='[ "27e9b1ec8cb64709d0a8d3702344561674199fe81b885f1f9c9b2fb268795962","28
 ]'
 merkle-airdrop-cli verifyProofs --file ../testdata/airdrop.json \
   --index 1 \
-  --address juno1q4aw0vtcydtn7lqmkfprm4ncmr4jdj70ggc6sp \
+  --address wasm1k9hwzxs889jpvd7env8z49gad3a3633vg350tq \
   --amount 1000000000 \
   --proofs $PROOFS
 ```
